@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>骂人宝典</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei", sans-serif;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #7B24FF, #4A00E0);
+            padding: 25px 0;
+            text-align: center;
+            color: white;
+            font-size: 28px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .container {
+            width: 800px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        .text-box {
+            border: 1px solid #E0E0E0;
+            padding: 30px;
+            margin: 25px 0;
+            min-height: 200px;
+            border-radius: 8px;
+            font-size: 24px;
+            line-height: 1.6;
+            text-align: center;
+            color: #333;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .text-box:hover {
+            box-shadow: 0 0 15px rgba(123, 36, 255, 0.2);
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 35px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 0 15px;
+            border-radius: 50px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+        }
+        .btn-fire { 
+            background: linear-gradient(135deg, #FF6B6B, #FF416C);
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+        }
+        .btn-fire:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(255, 107, 107, 0.4);
+        }
+        .btn-copy { 
+            background: linear-gradient(135deg, #4ECDC4, #2BC0E4);
+            box-shadow: 0 4px 10px rgba(78, 205, 196, 0.3);
+        }
+        .btn-copy:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(78, 205, 196, 0.4);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            line-height: 1.6;
+            color: #666;
+            padding: 20px;
+        }
+        .alert {
+            color: #7B24FF;
+            font-weight: bold;
+            margin: 15px 0;
+            font-size: 18px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #7B24FF;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">祖安宝典</div>
+
+    <div class="container">
+        <div class="text-box" id="hitokoto-text">
+            人不骂我，我不骂人
+        </div>
+
+        <div class="loading" id="loading">
+            加载中... <span class="loading-dots">.</span>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-fire" id="random-btn">🔥 随机一条</button>
+            <button class="btn btn-copy" id="copy-btn">📋 复制</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="alert">这是一个用Node.js驱动的骂人宝典，是对<a href="https://caonima.de/" target="_blank">骂人宝典</a>的拙劣模仿</div>
+        <div class="alert">支持直接访问API获取JSON格式数据,在url后带上路由: <code>/api/hitokoto</code></div>
+        <p>© 1989-2025 JavaScript Yes!</p>
+        <p>联系:别联系了</p>
+    </div>
+    
+    <div class="toast" id="toast">复制成功！</div>
+
+    <script>
+        // DOM元素
+        const hitokotoText = document.getElementById('hitokoto-text');
+        const randomBtn = document.getElementById('random-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const loading = document.getElementById('loading');
+        const toast = document.getElementById('toast');
+        
+        // 获取随机一言
+        async function fetchHitokoto() {
+            try {
+                // 显示加载动画
+                loading.style.display = 'block';
+                hitokotoText.style.opacity = '0.5';
+                
+                // 添加加载动画效果
+                animateLoading();
+                
+                // 请求API
+                const response = await fetch('/api/hitokoto');
+                const data = await response.json();
+                
+                // 更新内容
+                hitokotoText.textContent = data.hitokoto;
+                
+                // 添加动画效果
+                hitokotoText.style.opacity = '0';
+                setTimeout(() => {
+                    hitokotoText.style.opacity = '1';
+                }, 300);
+                
+            } catch (error) {
+                console.error('获取一言失败:', error);
+                hitokotoText.textContent = '获取内容失败，请重试';
+            } finally {
+                // 隐藏加载动画
+                loading.style.display = 'none';
+                hitokotoText.style.opacity = '1';
+            }
+        }
+        
+        // 复制功能
+        function copyToClipboard() {
+            const text = hitokotoText.textContent;
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    showToast('复制成功！');
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    showToast('复制失败，请手动复制');
+                });
+        }
+        
+        // 显示提示信息
+        function showToast(message) {
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                    toast.style.opacity = '1';
+                }, 300);
+            }, 2000);
+        }
+        
+        // 加载动画效果
+        function animateLoading() {
+            let dots = 0;
+            const dotsElement = document.querySelector('.loading-dots');
+            
+            const interval = setInterval(() => {
+                dots = (dots + 1) % 4;
+                dotsElement.textContent = '.'.repeat(dots);
+            }, 500);
+            
+            // 当请求完成时清除动画
+            return () => clearInterval(interval);
+        }
+        
+        // 页面加载时获取第一条
+        window.addEventListener('DOMContentLoaded', fetchHitokoto);
+        
+        // 绑定事件
+        randomBtn.addEventListener('click', fetchHitokoto);
+        copyBtn.addEventListener('click', copyToClipboard);
+    </script>
+</body>
+</html>
