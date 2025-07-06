@@ -13,7 +13,7 @@
 先决条件: Node.js>= 20.0.0
 1. git clone 本项目
 ```cmd
-git clone --depth=1 https://github.com/organizations/tgx-coding/bad-hitokoto
+git clone --depth=1 https://github.com/tgx-coding/bad-hitokoto
 ```
 2. 执行依赖安装
 ```cmd
