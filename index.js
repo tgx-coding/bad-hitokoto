@@ -9,7 +9,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'hitokoto.txt');
 
-//全局请求计数器 
+// 全局请求计数器 
 let globalRequestCount = 0;
 const GLOBAL_LIMIT = 500; // 15分钟内全局最大请求数
 const WINDOW_MS = 15 * 60 * 1000; // 15分钟窗口
@@ -23,18 +23,111 @@ setInterval(() => {
 // 添加代理支持以获取真实IP
 app.set('trust proxy', true);
 
-//ip速率限制器
+// 黑名单
+const IP_BLACKLIST = new Map(); // { ip: banExpiryTimestamp }
+const IP_REQUEST_COUNTERS = new Map(); // { ip: { count: number, expiry: timestamp } }
+const BAN_DURATION = 48 * 60 * 60 * 1000; // 48小时封禁
+const MALICIOUS_THRESHOLD = 600; // 15分钟内600次请求视为恶意IP
+
+// 定期清理过期计数器
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of IP_REQUEST_COUNTERS.entries()) {
+    if (data.expiry <= now) {
+      IP_REQUEST_COUNTERS.delete(ip);
+    }
+  }
+}, 60 * 1000); // 每分钟清理一次
+
+// 定期清理过期黑名单
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, expiry] of IP_BLACKLIST.entries()) {
+    if (expiry <= now) {
+      IP_BLACKLIST.delete(ip);
+      console.log(`[${new Date(now).toISOString()}] IP ${ip} 已从黑名单移除`);
+    }
+  }
+}, 30 * 60 * 1000); // 每30分钟清理一次
+
+// 恶意IP检测中间件
+const ipBlacklistMiddleware = (req, res, next) => {
+  const clientIP = req.headers['x-forwarded-for'] || req.ip;
+  
+  // 检查IP是否在黑名单中
+  const banExpiry = IP_BLACKLIST.get(clientIP);
+  if (banExpiry) {
+    if (banExpiry > Date.now()) {
+      // 仍在封禁期内
+      const remainingHours = ((banExpiry - Date.now()) / (60 * 60 * 1000)).toFixed(1);
+      
+      // 记录封禁日志
+      console.warn(`[${new Date().toISOString()}] 拒绝黑名单IP: ${clientIP}, 剩余封禁时间: ${remainingHours}小时`);
+      
+      return res.status(403).json({
+        error: '您的IP已被封禁',
+        message: `检测到恶意行为，该IP已被封禁48小时。剩余时间: ${remainingHours}小时`,
+        timestamp: new Date().toISOString(),
+        expiry: banExpiry
+      });
+    } else {
+      // 封禁已过期，移除黑名单
+      IP_BLACKLIST.delete(clientIP);
+    }
+  }
+  
+  // 更新IP请求计数器
+  let ipData = IP_REQUEST_COUNTERS.get(clientIP);
+  const now = Date.now();
+  
+  if (!ipData || ipData.expiry <= now) {
+    // 新计数器或计数器已过期
+    ipData = { count: 1, expiry: now + WINDOW_MS };
+    IP_REQUEST_COUNTERS.set(clientIP, ipData);
+  } else {
+    // 增加计数器
+    ipData.count++;
+    
+    // 检查是否达到恶意阈值
+    if (ipData.count >= MALICIOUS_THRESHOLD) {
+      // 添加到黑名单
+      const banExpiry = now + BAN_DURATION;
+      IP_BLACKLIST.set(clientIP, banExpiry);
+      
+      // 记录安全事件
+      console.error(`[${new Date().toISOString()}] 检测到恶意IP: ${clientIP}, 请求次数: ${ipData.count}, 已封禁至 ${new Date(banExpiry).toISOString()}`);
+      
+      // 返回封禁响应
+      return res.status(403).json({
+        error: '您的IP已被封禁',
+        message: '检测到异常高频请求，该IP已被封禁48小时',
+        timestamp: new Date().toISOString(),
+        expiry: banExpiry
+      });
+    }
+  }
+  
+  next();
+};
+
+// ip速率限制器
 const apiLimiter = rateLimit({
   windowMs: WINDOW_MS,
   max: 100,                // 每个IP最多100次请求
   standardHeaders: true,   // 返回标准速率限制头
   legacyHeaders: false,    // 禁用旧版头
+  skip: (req) => {
+    // 黑名单IP直接跳过正常限流（已在前置中间件处理）
+    const clientIP = req.headers['x-forwarded-for'] || req.ip;
+    return IP_BLACKLIST.has(clientIP);
+  },
   handler: (req, res) => {
     // 获取操作类型（如果有）
     const operation = req.query.operation || 'random';
+    const clientIP = req.headers['x-forwarded-for'] || req.ip;
     
     // 记录警告日志（包含触发IP和操作类型）
-    console.warn(`[${new Date().toISOString()}] IP速率限制触发: IP=${req.ip}, 操作=${operation}`);
+    console.warn(`[${new Date().toISOString()}] IP速率限制触发: IP=${clientIP}, 操作=${operation}`);
     
     // 返回JSON格式的错误响应
     res.status(429).json({
@@ -45,7 +138,7 @@ const apiLimiter = rateLimit({
   }
 });
 
-//全局速率限制中间件
+// 修复全局速率限制中间件
 const globalRateLimiter = (req, res, next) => {
   globalRequestCount++;
   
@@ -58,7 +151,7 @@ const globalRateLimiter = (req, res, next) => {
     console.warn(`[${new Date().toISOString()}] 全局速率限制触发: IP=${clientIP}, 操作=${operation}, 当前请求数=${globalRequestCount}`);
     
     return res.status(429).json({
-      error: '服务繁忙，请15分钟后再试',
+      error: '全局暂停，15分钟后再试吧',
       timestamp: new Date().toISOString(),
       retryAfter: WINDOW_MS
     });
@@ -67,7 +160,7 @@ const globalRateLimiter = (req, res, next) => {
   next();
 };
 
-// 自定义流解析器：将文本按 | 分割为句子
+// 修复HitokotoParser流处理
 class HitokotoParser extends Transform {
   constructor() {
     super({ readableObjectMode: true });
@@ -75,20 +168,25 @@ class HitokotoParser extends Transform {
   }
 
   _transform(chunk, encoding, callback) {
-    this.buffer += chunk.toString();
+    // 正确处理编码
+    this.buffer += chunk.toString('utf8');
     const segments = this.buffer.split('|');
+    
+    // 保留最后一个不完整的段
     this.buffer = segments.pop() || '';
     
-    segments.forEach(segment => {
+    // 处理完整的段
+    for (const segment of segments) {
       if (segment.trim()) {
         this.push(segment.trim());
       }
-    });
+    }
     
     callback();
   }
 
   _flush(callback) {
+    // 处理剩余缓冲区内容
     if (this.buffer.trim()) {
       this.push(this.buffer.trim());
     }
@@ -96,42 +194,33 @@ class HitokotoParser extends Transform {
   }
 }
 
-// 流式统计句子总数
-function countSentences() {
+// 流式加载所有句子到内存
+function loadAllSentences() {
   return new Promise((resolve, reject) => {
-    let count = 0;
+    const sentences = [];
     
-    fs.createReadStream(DATA_FILE)
-      .pipe(new HitokotoParser())
-      .on('data', () => count++)
-      .on('end', () => resolve(count))
-      .on('error', reject);
-  });
-}
-
-// 流式获取特定位置的句子
-function getSentenceAtPosition(position) {
-  return new Promise((resolve, reject) => {
-    let current = 0;
-    
-    const stream = fs.createReadStream(DATA_FILE)
+    const stream = fs.createReadStream(DATA_FILE, 'utf8')
       .pipe(new HitokotoParser())
       .on('data', (sentence) => {
-        current++;
-        if (current === position) {
-          resolve(sentence);
-          stream.destroy();
+        // 过滤空句子
+        if (sentence && sentence.trim().length > 0) {
+          sentences.push(sentence.trim());
         }
       })
       .on('end', () => {
-        if (current < position) {
-          reject(new Error('超出句子范围'));
+        if (sentences.length === 0) {
+          reject(new Error('一言库为空'));
+        } else {
+          resolve(sentences);
         }
       })
       .on('error', reject);
   });
 }
 
+// 参数到关键词的映射
+const PARAM_MAPPING = { bi:'逼', m:'妈', d:'爸', fuck:'操' // 可以继续添加更多映射
+ };
 // 自定义日志格式
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'), 
@@ -154,25 +243,59 @@ app.use(morgan(
 ));
 
 // 主服务逻辑
+// 使用全局状态对象，以便文件更新时可以更新数据
+const appState = {
+  sentences: [],
+  totalSentences: 0
+};
+
 async function startServer() {
   try {
-    // 预热：统计总句子数
-    const totalSentences = await countSentences();
-    console.log(`一言库已加载，共 ${totalSentences} 条句子`);
+    // 加载所有句子到内存
+    appState.sentences = await loadAllSentences();
+    appState.totalSentences = appState.sentences.length;
+    console.log(`一言库已加载，共 ${appState.totalSentences} 条句子`);
     
     // 设置静态文件服务（用于前端HTML）
     app.use(express.static('public'));
   
-    // API路由：返回JSON格式的一言
-    //添加全局限制中间件
-    app.get('/api/hitokoto', globalRateLimiter, apiLimiter, async (req, res) => {
+    // 应用中间件顺序：黑名单检测 -> 全局限制 -> IP限流
+    app.get('/api/hitokoto', 
+      ipBlacklistMiddleware,  // 恶意IP检测
+      globalRateLimiter,     // 全局速率限制
+      apiLimiter,            // IP速率限制
+      async (req, res) => {
       try {
         const operation = req.query.operation || 'random';
         const clientIP = req.headers['x-forwarded-for'] || req.ip;
         const userAgent = req.get('User-Agent') || 'unknown';
+        const themeParam = req.query.theme || req.query.id; // 支持theme和id参数
         
-        const randomPos = Math.floor(Math.random() * totalSentences) + 1;
-        const sentence = await getSentenceAtPosition(randomPos);
+        let sentence;
+        let source = 'random';
+        let matchedSentences = [];
+        let keyword = null;
+        
+        // 主题过滤逻辑
+        if (themeParam) {
+          // 获取实际关键词
+          keyword = PARAM_MAPPING[themeParam] || themeParam;
+          
+          // 过滤包含关键词的句子
+          matchedSentences = appState.sentences.filter(s => s.includes(keyword));
+          
+          if (matchedSentences.length > 0) {
+            // 从匹配的句子中随机选择
+            sentence = matchedSentences[Math.floor(Math.random() * matchedSentences.length)];
+            source = `theme:${themeParam}`;
+          }
+        }
+        
+        // 如果没有匹配的主题或未提供主题，则随机选择
+        if (!sentence) {
+          const randomIndex = Math.floor(Math.random() * appState.totalSentences);
+          sentence = appState.sentences[randomIndex];
+        }
         
         // 记录详细日志
         const logEntry = {
@@ -181,14 +304,19 @@ async function startServer() {
           operation: operation,
           userAgent: userAgent,
           sentence: sentence,
-          position: randomPos
+          source: source,
+          keyword: keyword,
+          matchedCount: matchedSentences.length
         };
         
         console.log(JSON.stringify(logEntry));
         
         res.json({
           hitokoto: sentence,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          keyword: keyword,
+          matched: matchedSentences.length > 0,
+          matchedCount: matchedSentences.length
         });
       } catch (err) {
         console.error('获取一言失败:', err);
@@ -202,6 +330,12 @@ async function startServer() {
       console.log(`API地址: http://localhost:${PORT}/api/hitokoto`);
       console.log(`访问日志将保存到: ${path.join(__dirname, 'access.log')}`);
       console.log(`全局请求限制: ${GLOBAL_LIMIT} 次/${WINDOW_MS/60000}分钟`);
+      console.log(`恶意IP检测阈值: ${MALICIOUS_THRESHOLD} 次/${WINDOW_MS/60000}分钟请求将被封禁48小时`);
+      console.log(`主题查询示例:  http://localhost:3000/api/hitokoto?id=bi or http://localhost:3000/api/hitokoto?theme=bi`);
+      console.log(`可用主题参数: ${Object.keys(PARAM_MAPPING).join(', ')}`);
+      
+      // 显示当前黑名单状态
+      console.log(`当前黑名单IP数量: ${IP_BLACKLIST.size}`);
     });
   } catch (err) {
     console.error('初始化失败:', err);
@@ -210,9 +344,17 @@ async function startServer() {
 }
 
 // 添加文件变化监听
-fs.watch(DATA_FILE, (eventType) => {
+fs.watch(DATA_FILE, async (eventType) => {
   if (eventType === 'change') {
-    console.log('检测到一言库更新，将在下次请求时重新统计...');
+    try {
+      console.log('检测到一言库更新，重新加载数据...');
+      const newSentences = await loadAllSentences();
+      appState.sentences = newSentences;
+      appState.totalSentences = newSentences.length;
+      console.log('一言库更新完成，新句子数:', newSentences.length);
+    } catch (err) {
+      console.error('重新加载数据失败:', err);
+    }
   }
 });
 
