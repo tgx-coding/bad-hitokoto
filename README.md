@@ -10,10 +10,7 @@
  ![图片示例](/example.png)
 ## 新功能
 
-- 追加参数查询，用法为：http://localhost:3000/api/hitokoto?id=bi 映射表如下:
-```JavaScript
-const PARAM_MAPPING = { bi:'逼', m:'妈', d:'爸', fuck:'操' // 可以继续添加更多映射
- };
+- 修改参数查询，用法为：http://localhost:3000/api/hitokoto?level=min/max 其中min对应较轻的程度，而max则再进一步
 ```
 - 速率限制与黑名单
 
@@ -33,21 +30,22 @@ node index.js
 ```
 - 启动后日志应当如下：
 ```log
-一言库已加载，共 1310 条句子
+成功连接到SQLite数据库
+一言库统计: 总计 1679 条句子
+  - max级别: 997 条 (人文类)
+  - min级别: 682 条 (天气/时间类)
 服务已启动: http://localhost:3000
 API地址: http://localhost:3000/api/hitokoto
 访问日志将保存到: C:\lennode\xm\caonima\access.log
 全局请求限制: 500 次/15分钟
 恶意IP检测阈值: 600 次/15分钟请求将被封禁48小时
-主题查询示例:  http://localhost:3000/api/hitokoto?id=bi or http://localhost:3000/api/hitokoto?theme=bi
-可用主题参数: bi, m, d, fuck
-当前黑名单IP数量: 0
+级别查询示例: /api/hitokoto?level=max
+级别查询示例: /api/hitokoto?level=min
 ```
 
 ## 原理&想说的
 
 - 这是使用Node.js移植的骂人宝典，原版采用PHP并更为现代化(~~碎碎念:PHP还现代?~~)
-- 原版有骂人分级，但本版本作为初版暂时没有(~~绝对不是我懒~~)
 - 项目图一乐，真正想支持还请去看原版
 
 ## 许可证

@@ -1,13 +1,13 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const { Transform } = require('stream');
+const fs = require('fs'); // 添加fs模块引入
 const morgan = require('morgan');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'hitokoto.txt');
+const DB_PATH = path.join(__dirname, 'data.db');
 
 // 全局请求计数器 
 let globalRequestCount = 0;
@@ -23,7 +23,7 @@ setInterval(() => {
 // 添加代理支持以获取真实IP
 app.set('trust proxy', true);
 
-// 黑名单
+// ======================== 恶意IP检测与黑名单系统 ========================
 const IP_BLACKLIST = new Map(); // { ip: banExpiryTimestamp }
 const IP_REQUEST_COUNTERS = new Map(); // { ip: { count: number, expiry: timestamp } }
 const BAN_DURATION = 48 * 60 * 60 * 1000; // 48小时封禁
@@ -138,7 +138,7 @@ const apiLimiter = rateLimit({
   }
 });
 
-// 修复全局速率限制中间件
+// 全局速率限制中间件
 const globalRateLimiter = (req, res, next) => {
   globalRequestCount++;
   
@@ -160,67 +160,6 @@ const globalRateLimiter = (req, res, next) => {
   next();
 };
 
-// 修复HitokotoParser流处理
-class HitokotoParser extends Transform {
-  constructor() {
-    super({ readableObjectMode: true });
-    this.buffer = '';
-  }
-
-  _transform(chunk, encoding, callback) {
-    // 正确处理编码
-    this.buffer += chunk.toString('utf8');
-    const segments = this.buffer.split('|');
-    
-    // 保留最后一个不完整的段
-    this.buffer = segments.pop() || '';
-    
-    // 处理完整的段
-    for (const segment of segments) {
-      if (segment.trim()) {
-        this.push(segment.trim());
-      }
-    }
-    
-    callback();
-  }
-
-  _flush(callback) {
-    // 处理剩余缓冲区内容
-    if (this.buffer.trim()) {
-      this.push(this.buffer.trim());
-    }
-    callback();
-  }
-}
-
-// 流式加载所有句子到内存
-function loadAllSentences() {
-  return new Promise((resolve, reject) => {
-    const sentences = [];
-    
-    const stream = fs.createReadStream(DATA_FILE, 'utf8')
-      .pipe(new HitokotoParser())
-      .on('data', (sentence) => {
-        // 过滤空句子
-        if (sentence && sentence.trim().length > 0) {
-          sentences.push(sentence.trim());
-        }
-      })
-      .on('end', () => {
-        if (sentences.length === 0) {
-          reject(new Error('一言库为空'));
-        } else {
-          resolve(sentences);
-        }
-      })
-      .on('error', reject);
-  });
-}
-
-// 参数到关键词的映射
-const PARAM_MAPPING = { bi:'逼', m:'妈', d:'爸', fuck:'操' // 可以继续添加更多映射
- };
 // 自定义日志格式
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'), 
@@ -242,19 +181,46 @@ app.use(morgan(
   { stream: accessLogStream }
 ));
 
+// 创建数据库连接
+const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY, (err) => {
+  if (err) {
+    console.error('数据库连接错误:', err.message);
+    process.exit(1);
+  }
+  console.log('成功连接到SQLite数据库');
+});
+
 // 主服务逻辑
-// 使用全局状态对象，以便文件更新时可以更新数据
+// 使用全局状态对象，存储数据库统计信息
 const appState = {
-  sentences: [],
-  totalSentences: 0
+  totalSentences: 0,
+  maxCount: 0,
+  minCount: 0
 };
 
 async function startServer() {
   try {
-    // 加载所有句子到内存
-    appState.sentences = await loadAllSentences();
-    appState.totalSentences = appState.sentences.length;
-    console.log(`一言库已加载，共 ${appState.totalSentences} 条句子`);
+    // 获取数据库统计信息
+    const stats = await new Promise((resolve, reject) => {
+      db.get(`
+        SELECT 
+          COUNT(*) AS total,
+          SUM(CASE WHEN level = 'max' THEN 1 ELSE 0 END) AS maxCount,
+          SUM(CASE WHEN level = 'min' THEN 1 ELSE 0 END) AS minCount
+        FROM main
+      `, (err, row) => {
+        if (err) return reject(err);
+        resolve(row);
+      });
+    });
+    
+    appState.totalSentences = stats.total;
+    appState.maxCount = stats.maxCount;
+    appState.minCount = stats.minCount;
+    
+    console.log(`一言库统计: 总计 ${appState.totalSentences} 条句子`);
+    console.log(`  - max级别: ${appState.maxCount} 条 (人文类)`);
+    console.log(`  - min级别: ${appState.minCount} 条 (天气/时间类)`);
     
     // 设置静态文件服务（用于前端HTML）
     app.use(express.static('public'));
@@ -269,32 +235,40 @@ async function startServer() {
         const operation = req.query.operation || 'random';
         const clientIP = req.headers['x-forwarded-for'] || req.ip;
         const userAgent = req.get('User-Agent') || 'unknown';
-        const themeParam = req.query.theme || req.query.id; // 支持theme和id参数
+        const levelParam = req.query.level; // level参数
         
-        let sentence;
-        let source = 'random';
-        let matchedSentences = [];
-        let keyword = null;
+        // 构建SQL查询
+        let query = "SELECT * FROM main";
+        let params = [];
+        let conditions = [];
         
-        // 主题过滤逻辑
-        if (themeParam) {
-          // 获取实际关键词
-          keyword = PARAM_MAPPING[themeParam] || themeParam;
-          
-          // 过滤包含关键词的句子
-          matchedSentences = appState.sentences.filter(s => s.includes(keyword));
-          
-          if (matchedSentences.length > 0) {
-            // 从匹配的句子中随机选择
-            sentence = matchedSentences[Math.floor(Math.random() * matchedSentences.length)];
-            source = `theme:${themeParam}`;
-          }
+        // level过滤
+        if (levelParam === 'max' || levelParam === 'min') {
+          conditions.push("level = ?");
+          params.push(levelParam);
         }
         
-        // 如果没有匹配的主题或未提供主题，则随机选择
-        if (!sentence) {
-          const randomIndex = Math.floor(Math.random() * appState.totalSentences);
-          sentence = appState.sentences[randomIndex];
+        // 组合查询条件
+        if (conditions.length > 0) {
+          query += " WHERE " + conditions.join(" AND ");
+        }
+        
+        // 添加随机排序和限制
+        query += " ORDER BY RANDOM() LIMIT 1";
+        
+        // 执行数据库查询
+        const row = await new Promise((resolve, reject) => {
+          db.get(query, params, (err, row) => {
+            if (err) return reject(err);
+            resolve(row);
+          });
+        });
+        
+        if (!row) {
+          return res.status(404).json({
+            error: '未找到匹配的句子',
+            timestamp: new Date().toISOString()
+          });
         }
         
         // 记录详细日志
@@ -303,24 +277,25 @@ async function startServer() {
           ip: clientIP,
           operation: operation,
           userAgent: userAgent,
-          sentence: sentence,
-          source: source,
-          keyword: keyword,
-          matchedCount: matchedSentences.length
+          sentence: row.text,
+          id: row.id,
+          level: row.level
         };
         
         console.log(JSON.stringify(logEntry));
         
         res.json({
-          hitokoto: sentence,
-          timestamp: new Date().toISOString(),
-          keyword: keyword,
-          matched: matchedSentences.length > 0,
-          matchedCount: matchedSentences.length
+          hitokoto: row.text,
+          id: row.id,
+          level: row.level,
+          timestamp: new Date().toISOString()
         });
       } catch (err) {
         console.error('获取一言失败:', err);
-        res.status(500).json({ error: '获取一言失败' });
+        res.status(500).json({ 
+          error: '获取一言失败',
+          details: err.message 
+        });
       }
     });
 
@@ -331,8 +306,8 @@ async function startServer() {
       console.log(`访问日志将保存到: ${path.join(__dirname, 'access.log')}`);
       console.log(`全局请求限制: ${GLOBAL_LIMIT} 次/${WINDOW_MS/60000}分钟`);
       console.log(`恶意IP检测阈值: ${MALICIOUS_THRESHOLD} 次/${WINDOW_MS/60000}分钟请求将被封禁48小时`);
-      console.log(`主题查询示例:  http://localhost:3000/api/hitokoto?id=bi or http://localhost:3000/api/hitokoto?theme=bi`);
-      console.log(`可用主题参数: ${Object.keys(PARAM_MAPPING).join(', ')}`);
+      console.log(`级别查询示例: /api/hitokoto?level=max`);
+      console.log(`级别查询示例: /api/hitokoto?level=min`);
       
       // 显示当前黑名单状态
       console.log(`当前黑名单IP数量: ${IP_BLACKLIST.size}`);
@@ -343,19 +318,16 @@ async function startServer() {
   }
 }
 
-// 添加文件变化监听
-fs.watch(DATA_FILE, async (eventType) => {
-  if (eventType === 'change') {
-    try {
-      console.log('检测到一言库更新，重新加载数据...');
-      const newSentences = await loadAllSentences();
-      appState.sentences = newSentences;
-      appState.totalSentences = newSentences.length;
-      console.log('一言库更新完成，新句子数:', newSentences.length);
-    } catch (err) {
-      console.error('重新加载数据失败:', err);
+// 添加数据库连接关闭处理
+process.on('SIGINT', () => {
+  db.close((err) => {
+    if (err) {
+      console.error('关闭数据库连接时出错:', err.message);
+    } else {
+      console.log('数据库连接已关闭');
     }
-  }
+    process.exit(0);
+  });
 });
 
 // 启动服务
