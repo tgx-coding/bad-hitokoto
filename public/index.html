@@ -3,17 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>骂人宝典</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <title>骂人宝典BY Node.js</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #7B24FF;
-            --secondary: #4ECDC4;
-            --accent: #FF6B6B;
-            --dark: #333;
-            --light: #f8f9fa;
-            --gray: #6c757d;
-        }
+    --primary: #7B24FF;
+    --secondary: #4ECDC4;
+    --accent: #FF6B6B;
+    --dark: #333;
+    --light: #f8f9fa;
+    --gray: #6c757d;
+    
+    
+    /* 主题变量 */
+    --bg-gradient-start: #1a1a2e;
+    --bg-gradient-end: #16213e;
+    --card-bg: rgba(30, 30, 46, 0.6);
+    --text-color: white;
+    --header-bg: linear-gradient(135deg, rgba(123, 36, 255, 0.7) 0%, rgba(90, 29, 211, 0.7) 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    --quote-bg: linear-gradient(135deg, rgba(40, 40, 60, 0.7) 0%, rgba(30, 30, 50, 0.7) 100%);
+    
+    /* 新增功能卡片变量 */
+    --feature-card-bg: rgba(40, 40, 60, 0.5);
+    --feature-card-border: rgba(255, 255, 255, 0.05);
+    --feature-card-title: var(--primary);
+    --feature-card-text: rgba(255, 255, 255, 0.8);
+
+    --modal-bg: rgba(26, 26, 46, 0.95);
+    --modal-border: rgba(123, 36, 255, 0.2);
+    --modal-title: rgba(255, 255, 255, 0.95);
+    --modal-text: rgba(255, 255, 255, 0.85);
+    --modal-close-bg: rgba(255, 255, 255, 0.1);
+    --modal-section-bg: rgba(40, 40, 60, 0.4);
+    --modal-section-border: var(--primary);
+    --modal-code-bg: rgba(30, 30, 46, 0.8);
+}
+
+[data-theme="light"] {
+    --bg-gradient-start: #e0e5ff;
+    --bg-gradient-end: #d4e8ff;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --text-color: #333;
+    --header-bg: linear-gradient(135deg, rgba(123, 36, 255, 0.5) 0%, rgba(90, 29, 211, 0.5) 100%);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    --quote-bg: linear-gradient(135deg, rgba(240, 240, 255, 0.9) 0%, rgba(230, 230, 250, 0.9) 100%);
+    
+    /* 浅色主题下的功能卡片变量 */
+    --feature-card-bg: rgba(250, 250, 255, 0.85);
+    --feature-card-border: rgba(123, 36, 255, 0.1);
+    --feature-card-title: #5a1dd3;
+    --feature-card-text: rgba(60, 60, 80, 0.9);
+
+    --modal-bg: rgba(255, 255, 255, 0.95);
+    --modal-border: rgba(123, 36, 255, 0.15);
+    --modal-title: #333;
+    --modal-text: #444;
+    --modal-close-bg: rgba(0, 0, 0, 0.05);
+    --modal-section-bg: rgba(240, 240, 255, 0.8);
+    --modal-section-border: var(--primary);
+    --modal-code-bg: rgba(240, 240, 255, 0.9);
+}
         
         * {
             box-sizing: border-box;
@@ -24,12 +74,13 @@
         body {
             margin: 0;
             font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-color);
             line-height: 1.6;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            transition: background 0.5s ease;
         }
         
         /* =============== 动态背景元素 =============== */
@@ -54,8 +105,8 @@
         .element-1 { top: 10%; left: 5%; width: 30px; height: 30px; background: var(--primary); border-radius: 50%; animation: float 18s infinite ease-in-out; }
         .element-2 { top: 20%; right: 15%; width: 40px; height: 40px; background: var(--accent); border-radius: 50%; animation: float 22s infinite ease-in-out 2s; }
         .element-3 { bottom: 30%; left: 20%; width: 25px; height: 25px; background: var(--secondary); border-radius: 50%; animation: float 25s infinite ease-in-out 4s; }
-        .element-4 { top: 40%; right: 25%; width: 50px; height: 50px; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); background: rgba(255, 255, 255, 0.3); animation: float 20s infinite ease-in-out 1s; }
-        .element-5 { bottom: 20%; right: 10%; width: 35px; height: 35px; background: rgba(255, 255, 255, 0.4); border-radius: 50%; animation: float 30s infinite ease-in-out 3s; }
+        .element-4 { top: 40%; right: 25%; width: 50px; height: 50px; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); background: rgba(123, 36, 255, 0.3); animation: float 20s infinite ease-in-out 1s; }
+        .element-5 { bottom: 20%; right: 10%; width: 35px; height: 35px; background: rgba(78, 205, 196, 0.4); border-radius: 50%; animation: float 30s infinite ease-in-out 3s; }
         
         @keyframes float {
             0% { transform: translate(0, 0) rotate(0deg); }
@@ -67,7 +118,7 @@
         
         /* =============== 头部设计 =============== */
         .header {
-            background: linear-gradient(135deg, rgba(123, 36, 255, 0.7) 0%, rgba(90, 29, 211, 0.7) 100%);
+            background: var(--header-bg);
             padding: 25px 0;
             text-align: center;
             color: white;
@@ -85,6 +136,14 @@
             animation: text-glow 3s infinite alternate;
         }
         
+        .header-controls {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            gap: 15px;
+        }
+        
         @keyframes text-glow {
             from { text-shadow: 0 0 5px rgba(123, 36, 255, 0.5); }
             to { text-shadow: 0 0 20px rgba(123, 36, 255, 0.8), 0 0 30px rgba(78, 205, 196, 0.6); }
@@ -95,15 +154,15 @@
             width: 90%;
             max-width: 800px;
             margin: 40px auto;
-            background: rgba(30, 30, 46, 0.6);
+            background: var(--card-bg);
             padding: 35px;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: var(--card-shadow);
             position: relative;
             z-index: 10;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(123, 36, 255, 0.1);
             transition: all 0.5s ease;
         }
         
@@ -112,9 +171,28 @@
             transform: translateY(-5px);
         }
         
-        /* =============== 一言卡片 =============== */
+        .parallax-toggle {
+            position: absolute;
+            top: -20px;
+            left: 20px;
+            background: rgba(60, 60, 80, 0.8);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(5px);
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* =============== 脏话卡片 =============== */
         .quote-card {
-            background: linear-gradient(135deg, rgba(40, 40, 60, 0.7) 0%, rgba(30, 30, 50, 0.7) 100%);
+            background: var(--quote-bg);
             border: 1px solid rgba(123, 36, 255, 0.2);
             padding: 40px 30px;
             margin: 25px 0;
@@ -130,6 +208,8 @@
             transition: all 0.4s ease;
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
+            /* 非对称设计 */
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%);
         }
         
         .quote-card:hover {
@@ -137,15 +217,17 @@
             transform: translateY(-3px) scale(1.01);
         }
         
-        .quote-card::before {
-            content: """;
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 5rem;
-            color: rgba(123, 36, 255, 0.1);
-            font-family: Georgia, serif;
-        }
+       .quote-card::before {
+    content: '"';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 5rem;
+    color: rgba(123, 36, 255, 0.1);
+    font-family: Georgia, serif;
+    line-height: 1;
+    pointer-events: none;
+}
         
         /* =============== 控制区域 =============== */
         .controls {
@@ -161,7 +243,6 @@
             align-items: center;
             justify-content: center;
             padding: 14px 28px;
-            border-radius: 50px;
             color: white;
             text-decoration: none;
             font-weight: 600;
@@ -178,6 +259,10 @@
             -webkit-backdrop-filter: blur(5px);
             background: rgba(60, 60, 80, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            
+            /* 非对称设计 */
+            border-radius: 15px 5px 15px 5px;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
         }
         
         .btn::before {
@@ -319,6 +404,259 @@
             background: rgba(30, 50, 50, 0.9);
         }
         
+      /* =============== API 文档模态窗口 =============== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background: var(--modal-bg);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    position: relative;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--modal-border);
+    transform: translateY(50px);
+    transition: transform 0.4s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+}
+
+.modal-header {
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(123, 36, 255, 0.2);
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.modal-body {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 10px; /* 为滚动条留出空间 */
+    max-height: calc(90vh - 180px); /* 根据内容自动滚动 */
+}
+
+.close-modal {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: none;
+    border: none;
+    color: var(--modal-title);
+    font-size: 1.8rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    background: var(--modal-close-bg);
+    transform: rotate(90deg);
+}
+
+.api-doc-title {
+    color: var(--modal-title);
+    margin: 0;
+    text-align: center;
+    font-size: 1.8rem;
+    padding-right: 30px; /* 避免与关闭按钮重叠 */
+}
+
+.api-section {
+    background: var(--modal-section-bg);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    border-left: 4px solid var(--modal-section-border);
+    color: var(--modal-text);
+    position: relative;
+    overflow: hidden;
+}
+
+.api-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--modal-section-border);
+    border-radius: 2px;
+}
+
+.api-section h3 {
+    color: var(--accent);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+}
+
+.api-section pre {
+    background: var(--modal-code-bg);
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    margin: 15px 0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    position: relative;
+    border: 1px solid rgba(123, 36, 255, 0.1);
+}
+
+.api-section pre::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 100%;
+    background: linear-gradient(to right, transparent, var(--modal-code-bg));
+    pointer-events: none;
+}
+
+.api-section code {
+    background: rgba(123, 36, 255, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    color: var(--accent);
+}
+
+.api-section ul {
+    padding-left: 25px;
+    margin: 15px 0;
+}
+
+.api-section li {
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.api-section li::before {
+    content: '•';
+    color: var(--accent);
+    font-weight: bold;
+    position: absolute;
+    left: -20px;
+}
+
+/* 滚动条美化 */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(123, 36, 255, 0.05);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: rgba(123, 36, 255, 0.3);
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(123, 36, 255, 0.5);
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 25px 20px;
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .modal-body {
+        max-height: calc(85vh - 150px);
+    }
+    
+    .api-doc-title {
+        font-size: 1.5rem;
+    }
+    
+    .api-section {
+        padding: 15px;
+    }
+    
+    .api-section h3 {
+        font-size: 1.2rem;
+    }
+    
+    .api-section pre {
+        padding: 10px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content {
+        padding: 20px 15px;
+        max-height: 90vh;
+    }
+    
+    .modal-body {
+        max-height: calc(90vh - 130px);
+    }
+    
+    .api-doc-title {
+        font-size: 1.3rem;
+    }
+    
+    .api-section h3 {
+        font-size: 1.1rem;
+    }
+    
+    .api-section pre {
+        font-size: 0.8rem;
+    }
+    
+    .api-section ul {
+        padding-left: 20px;
+    }
+}
+
+        
         /* =============== 其他元素 =============== */
         .footer {
             text-align: center;
@@ -345,39 +683,70 @@
         }
         
         .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+.feature-card {
+    background: var(--feature-card-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid var(--feature-card-border);
+    /* 非对称设计 */
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 90% 100%, 0 100%);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(123, 36, 255, 0.2);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    color: var(--feature-card-title);
+    filter: drop-shadow(0 0 5px rgba(123, 36, 255, 0.3));
+    transition: color 0.3s ease;
+}
+
+.feature-card h3 {
+    margin-bottom: 10px;
+    color: var(--feature-card-title);
+    transition: color 0.3s ease;
+}
+
+.feature-card p {
+    color: var(--feature-card-text);
+    transition: color 0.3s ease;
+}
         
-        .feature-card {
-            background: rgba(40, 40, 60, 0.5);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: transform 0.3s ease;
+        .theme-toggle {
+            background: rgba(60, 60, 80, 0.6);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
             backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         
-        .feature-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(123, 36, 255, 0.2);
-        }
-        
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            color: var(--primary);
-            filter: drop-shadow(0 0 5px rgba(123, 36, 255, 0.3));
-        }
-        
-        .feature-card h3 {
-            margin-bottom: 10px;
-            color: var(--primary);
+        .theme-toggle:hover {
+            transform: rotate(30deg) scale(1.1);
+            background: rgba(123, 36, 255, 0.6);
         }
         
         @media (max-width: 768px) {
@@ -404,6 +773,11 @@
             .controls {
                 gap: 15px;
             }
+            
+            .header-controls {
+                top: 15px;
+                right: 15px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -428,10 +802,77 @@
             .controls {
                 flex-direction: column;
             }
+            
+            .header-controls {
+                position: relative;
+                top: 0;
+                right: 0;
+                justify-content: center;
+                margin-top: 15px;
+            }
         }
+
+        /* Cookie 同意横幅 */
+  .cookie-consent {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+    background: var(--modal-bg);
+    border: 1px solid var(--modal-border);
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 3000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    opacity: 0;
+    transform: translate(-50%, 100px);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  
+  .cookie-consent.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  
+  .cookie-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+  }
+  
+  .cookie-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .cookie-accept {
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.7) 0%, rgba(59, 189, 182, 0.7) 100%);
+    color: white;
+  }
+  
+  .cookie-reject {
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--text-color);
+  }
+  
+  .cookie-link {
+    color: var(--accent);
+    text-decoration: underline;
+  }
     </style>
 </head>
 <body>
+</div>
     <!-- 动态背景元素 -->
     <div class="floating-elements">
         <div class="floating-element element-1"></div>
@@ -443,10 +884,20 @@
 
     <div class="header">
         <h1>骂人宝典</h1>
-        <p>哎哟不是--这么现代怎么都是脏话，坏耶</p>
+        <p>文明你我他</p>
+        
+        <div class="header-controls">
+            <button class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
     </div>
 
     <div class="container">
+        <button class="parallax-toggle" id="parallax-toggle">
+            <i class="fas fa-cube"></i> 鼠标跟随效果开关
+        </button>
+        
         <div class="quote-card" id="hitokoto-text">
             人不骂我，我不骂人
         </div>
@@ -473,7 +924,7 @@
                         <path d="M2 12h20"/>
                     </svg>
                 </span>
-                随机一言
+                随机一句
             </button>
             
             <button class="btn btn-copy" id="copy-btn">
@@ -483,7 +934,7 @@
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                 </span>
-                复制内容
+                点击此处复制
             </button>
             
             <button class="btn btn-api" id="api-btn">
@@ -495,42 +946,47 @@
                         <path d="M10 6h8v4h-8V6Z"></path>
                     </svg>
                 </span>
-                API文档
+                API调用示例(详情需要点击这里)
             </button>
         </div>
         
         <div class="api-info">
             <p>您可以直接访问API获取JSON格式数据：</p>
             <p><code>GET /api/hitokoto</code></p>
-            <p>响应示例：{"hitokoto":"江南北都有你婊子妈的嫖客你妈妈的卖屁股生意边际全世界而你妈妈的下体已经被联合国认定为最好的肉体","id":832,"level":"max","timestamp":"2025-07-17T13:29:25.292Z"}</p>
-            <p>支持参数查询，示例:<code>/api/hitokoto?id=114</code></p>
+            <p>响应示例：{"timestamp":"2025-08-15T12:16:34.455Z","ip":"::1","operation":"random","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36","sentence":"你妈的头，像皮球，一脚踢到百货大楼。","id":963,"level":"max"}</p>
         </div>
         
         <div class="feature-grid">
             <div class="feature-card">
                 <div class="feature-icon">🌌</div>
-                <h3>脏话分级</h3>
-                <p>你可以通过level=min/max来处理脏话的层次</p>
+                <h3>id参数</h3>
+                <p>通过id=整型值返回匹配结果，没有返回无结果</p>
             </div>
             
             <div class="feature-card">
                 <div class="feature-icon">✨</div>
-                <h3>细腻动画</h3>
-                <p>微动效与过渡动画，提升交互体验(你就说你体验好不好吧)</p>
+                <h3>level参数</h3>
+                <p>通过level=maax/min来匹配脏话程度</p>
             </div>
             
             <div class="feature-card">
                 <div class="feature-icon">🔔</div>
-                <h3>智能通知</h3>
-                <p>优雅的速率限制提示与操作反馈</p>
+                <h3>无参数</h3>
+                <p>则随机返回</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚠️</div>
+                <h3>任何时候骂人都是不对的</h3>
+                <p>请理性交流</p>
             </div>
         </div>
     </div>
 
     <div class="footer">
         <div class="alert">这是一个用Node.js驱动的骂人宝典</div>
-        <p>© 1989-2025 Let's Make Node Great Again</p>
-        <p>联系:https://github.com/excellen114514</p>
+        <p>任何时候骂人都是不对的，还请娱乐为性质</p>
+       
     </div>
     
     <!-- 通知系统 -->
@@ -538,158 +994,290 @@
         <span class="notification-icon" id="notification-icon">⏳</span>
         <span id="notification-text">通知内容</span>
     </div>
+    
+    <!-- API文档模态窗口 -->
+   <!-- 替换原有的API文档模态窗口内容 -->
+<div class="modal" id="api-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="api-doc-title"> API 文档</h2>
+            <button class="close-modal" id="close-modal">
+                &times;
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="api-section">
+                <h3><i class="fas fa-code"></i> API 端点</h3>
+                <p>获取随机脏话：</p>
+                <pre>GET /api/hitokoto</pre>
+            </div>
+            
+            <div class="api-section">
+                <h3><i class="fas fa-exchange-alt"></i> 请求参数</h3>
+                <p>可选参数：</p>
+                <ul>
+                    <li><code>level</code>: 指定句子级别 (max: 粗暴的语气, min: 温和的语气)</li>
+                    <li><code>id</code>: 指定句子的唯一ID</li>
+                    <li><code>operation</code>: 操作类型标识 (用于日志记录)</li>
+                </ul>
+                <p>示例请求：</p>
+                <pre>// 获取指定脏话句子
+GET /api/hitokoto?level=max
+
+// 获取特定ID的句子
+GET /api/hitokoto?id=42
+
+// 带操作标识的请求
+GET /api/hitokoto?operation=homepage</pre>
+            </div>
+            
+            <div class="api-section">
+                <h3><i class="fas fa-reply"></i> 响应格式</h3>
+                <p>成功响应 (200 OK)：</p>
+                <pre>
+{"hitokoto":"你妈关注果子狸7777妖妖写字楼大妈，你爸特别关注理想记，你在微博上为我的英雄学院打call洗地，你弟是个二刺螈满嘴抽象话，  你朋友是北国佳人李春姬 你舅舅关注性感玉米，你的偶像是番茄王，你偶像大粉一直清单，你们全家都是美国驻华大使馆的铁杆粉丝，你们都有一个光明的未来。",
+"id":114,
+"level":"max",
+"timestamp":"2025-08-16T09:30:12.623Z"
+}</pre>
+                
+                <p>错误响应：</p>
+                <pre>// 未找到句子 (404)
+{
+  "error": "未找到匹配的句子",
+  "timestamp": "2025-07-05T12:00:00.000Z"
+}
+
+// 单个IP请求过多 (429)
+{
+  "error": "单个IP请求过多，请15分钟后再试",
+  "timestamp": "2025-07-05T12:00:00.000Z",
+  "retryAfter": 900000
+}
+
+// 全局请求限制触发 (429)
+{
+  "error": "全局暂停，15分钟后再试吧",
+  "timestamp": "2025-07-05T12:00:00.000Z",
+  "retryAfter": 900000
+}
+
+// IP被封禁 (403)
+{
+  "error": "您的IP已被封禁",
+  "message": "检测到异常高频请求，该IP已被封禁48小时",
+  "timestamp": "2025-07-05T12:00:00.000Z",
+  "expiry": 1741234567890
+}</pre>
+            </div>
+            
+            <div class="api-section">
+                <h3><i class="fas fa-tachometer-alt"></i> 速率限制</h3>
+                <p>系统采用多层速率限制：</p>
+                <ul>
+                    <li><strong>单个IP限制</strong>: 15分钟内最多100次请求</li>
+                    <li><strong>全局限制</strong>: 15分钟内最多500次请求</li>
+                    <li><strong>恶意IP检测</strong>: 15分钟内超过600次请求的IP将被封禁48小时</li>
+                </ul>
+                <p>响应头部包含速率限制信息：</p>
+                <ul>
+                    <li><code>X-RateLimit-Limit</code>: 允许的最大请求数</li>
+                    <li><code>X-RateLimit-Remaining</code>: 剩余请求数</li>
+                    <li><code>X-RateLimit-Reset</code>: 重置时间（时间戳）</li>
+                </ul>
+            </div>
+            
+            <div class="api-section">
+                <h3><i class="fas fa-database"></i> 数据库信息</h3>
+                <p>当前语料库包含以下分类：</p>
+                <ul>
+                    <li><strong>总计</strong>: ${appState.totalSentences} 条句子</li>
+                    <li><strong>max级别</strong>: ${appState.maxCount} 条 </li>
+                    <li><strong>min级别</strong>: ${appState.minCount} 条 </li>
+                </ul>
+                <p>所有请求将被记录到访问日志中。</p>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script>
         // DOM元素
-        const hitokotoText = document.getElementById('hitokoto-text');
-        const randomBtn = document.getElementById('random-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const apiBtn = document.getElementById('api-btn');
-        const loading = document.getElementById('loading');
-        const notification = document.getElementById('notification');
-        const notificationIcon = document.getElementById('notification-icon');
-        const notificationText = document.getElementById('notification-text');
+const hitokotoText = document.getElementById('hitokoto-text');
+const randomBtn = document.getElementById('random-btn');
+const copyBtn = document.getElementById('copy-btn');
+const apiBtn = document.getElementById('api-btn');
+const loading = document.getElementById('loading');
+const notification = document.getElementById('notification');
+const notificationIcon = document.getElementById('notification-icon');
+const notificationText = document.getElementById('notification-text');
+const themeToggle = document.getElementById('theme-toggle');
+const parallaxToggle = document.getElementById('parallax-toggle');
+const apiModal = document.getElementById('api-modal');
+const closeModal = document.getElementById('close-modal');
+const container = document.querySelector('.container');
+
+// 状态变量
+let parallaxEnabled = true;
+let currentTheme = 'dark';
+
+// 显示通知
+function showNotification(message, type = 'info', duration = 3000) {
+    notificationText.textContent = message;
+    notification.className = `notification ${type}`;
+    
+    if (type === 'error') {
+        notificationIcon.textContent = '⛔';
+    } else if (type === 'warning') {
+        notificationIcon.textContent = '⚠️';
+    } else {
+        notificationIcon.textContent = 'ℹ️';
+    }
+    
+    notification.classList.add('show');
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, duration);
+}
+
+// 切换主题
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    
+    const icon = themeToggle.querySelector('i');
+    icon.className = currentTheme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+    
+    showNotification(`已切换到${currentTheme === 'dark' ? '深色' : '浅色'}主题`, 'info');
+}
+
+// 切换3D视差效果
+function toggleParallax() {
+    parallaxEnabled = !parallaxEnabled;
+    
+    if (!parallaxEnabled) {
+        container.style.transform = 'rotateY(0deg) rotateX(0deg)';
+        container.style.transition = 'transform 0.3s ease';
+        parallaxToggle.innerHTML = '<i class="fas fa-cube"></i> 开启3D效果';
+        showNotification('已关闭3D视差效果', 'info');
+    } else {
+        container.style.transition = 'transform 0.1s ease-out';
+        parallaxToggle.innerHTML = '<i class="fas fa-cube"></i> 关闭3D效果';
+        showNotification('已开启3D视差效果', 'info');
+    }
+}
+
+// 获取随机一言
+async function fetchHitokoto() {
+    try {
+        loading.style.display = 'block';
+        hitokotoText.style.opacity = '0.5';
         
-        // 显示通知
-        function showNotification(message, type = 'info', duration = 3000) {
-            // 设置通知内容和样式
-            notificationText.textContent = message;
-            notification.className = `notification ${type}`;
-            
-            // 设置图标
-            if (type === 'error') {
-                notificationIcon.textContent = '⛔';
-            } else if (type === 'warning') {
-                notificationIcon.textContent = '⚠️';
-            } else {
-                notificationIcon.textContent = 'ℹ️';
-            }
-            
-            // 显示通知
-            notification.classList.add('show');
-            
-            // 自动隐藏
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
-        }
+        const response = await fetch('/api/hitokoto');
         
-        // 获取随机一言
-        async function fetchHitokoto() {
-            try {
-                // 显示加载动画
-                loading.style.display = 'block';
-                hitokotoText.style.opacity = '0.5';
-                
-                // 请求API
-                const response = await fetch('/api/hitokoto');
-                
-                // 检查响应状态
-                if (!response.ok) {
-                    if (response.status === 429) {
-                        // 速率限制错误
-                        const data = await response.json();
-                        const retryAfter = Math.ceil(data.retryAfter / 1000) || 15;
-                        
-                        showNotification(
-                            `请求过于频繁，请${retryAfter}秒后再试`, 
-                            'warning',
-                            5000
-                        );
-                        
-                        // 禁用按钮一段时间
-                        randomBtn.disabled = true;
-                        setTimeout(() => {
-                            randomBtn.disabled = false;
-                        }, retryAfter * 1000);
-                        
-                        return;
-                    } else {
-                        throw new Error(`HTTP错误: ${response.status}`);
-                    }
-                }
-                
+        if (!response.ok) {
+            if (response.status === 429) {
                 const data = await response.json();
-                
-                // 更新内容
-                hitokotoText.textContent = data.hitokoto;
-                
-                // 添加动画效果
-                hitokotoText.style.opacity = '0';
-                hitokotoText.style.transform = 'scale(0.95)';
+                const retryAfter = Math.ceil(data.retryAfter / 1000) || 15;
+                showNotification(`请求过于频繁，请${retryAfter}秒后再试`, 'warning', 5000);
+                randomBtn.disabled = true;
                 setTimeout(() => {
-                    hitokotoText.style.opacity = '1';
-                    hitokotoText.style.transform = 'scale(1)';
-                }, 300);
-                
-                // 显示成功通知
-                if (data.keyword) {
-                    showNotification(`已选择主题: ${data.keyword}`, 'info');
-                } else {
-                    showNotification('获取一言成功', 'info');
-                }
-                
-            } catch (error) {
-                console.error('获取一言失败:', error);
-                
-                // 错误通知
-                showNotification(
-                    error.message.includes('429') 
-                        ? '请求过于频繁，请稍后再试' 
-                        : '获取内容失败，请重试',
-                    'error'
-                );
-            } finally {
-                // 隐藏加载动画
-                loading.style.display = 'none';
-                hitokotoText.style.opacity = '1';
+                    randomBtn.disabled = false;
+                }, retryAfter * 1000);
+                return;
+            } else {
+                throw new Error(`HTTP错误: ${response.status}`);
             }
         }
         
-        // 复制功能
-        function copyToClipboard() {
-            const text = hitokotoText.textContent;
-            navigator.clipboard.writeText(text)
-                .then(() => {
-                    showNotification('复制成功！', 'info');
-                })
-                .catch(err => {
-                    console.error('复制失败:', err);
-                    showNotification('复制失败，请手动复制', 'error');
-                });
-        }
+        const data = await response.json();
+        hitokotoText.textContent = data.hitokoto || data.sentence || '获取内容失败';
         
-        // 显示API信息
-        function showApiInfo() {
-            showNotification('API端点: /api/hitokoto', 'info');
-        }
+        hitokotoText.style.opacity = '0';
+        hitokotoText.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            hitokotoText.style.opacity = '1';
+            hitokotoText.style.transform = 'scale(1)';
+        }, 300);
         
-        // 页面加载时获取第一条
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                fetchHitokoto();
-                showNotification('欢迎使用本服务', 'info');
-            }, 500);
+        showNotification('获取内容成功', 'info');
+        
+    } catch (error) {
+        console.error('获取失败:', error);
+        showNotification('获取失败，请重试', 'error');
+    } finally {
+        loading.style.display = 'none';
+        hitokotoText.style.opacity = '1';
+    }
+}
+
+// 复制功能
+function copyToClipboard() {
+    const text = hitokotoText.textContent;
+    navigator.clipboard.writeText(text)
+        .then(() => {
+            showNotification('复制成功！', 'info');
+        })
+        .catch(err => {
+            console.error('复制失败:', err);
+            showNotification('复制失败，请手动复制', 'error');
         });
-        
-        // 绑定事件
-        randomBtn.addEventListener('click', fetchHitokoto);
-        copyBtn.addEventListener('click', copyToClipboard);
-        apiBtn.addEventListener('click', showApiInfo);
-        
-        // 添加鼠标跟随效果
-        document.addEventListener('mousemove', (e) => {
-            const container = document.querySelector('.container');
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
-            container.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
-        });
-        
-        // 重置容器旋转
-        document.addEventListener('mouseleave', () => {
-            const container = document.querySelector('.container');
-            container.style.transform = 'rotateY(0deg) rotateX(0deg)';
-        });
+}
+
+// API文档相关
+function showApiDocumentation() {
+    apiModal.classList.add('show');
+}
+
+function closeApiDocumentation() {
+    apiModal.classList.remove('show');
+}
+
+// 页面加载
+window.addEventListener('DOMContentLoaded', () => {
+    // 添加必要的CSS样式
+    container.style.transformStyle = 'preserve-3d';
+    container.style.transition = 'transform 0.1s ease-out';
+    
+    setTimeout(() => {
+        fetchHitokoto();
+        showNotification('欢迎使用', 'info');
+    }, 500);
+});
+
+// 事件绑定
+randomBtn.addEventListener('click', fetchHitokoto);
+copyBtn.addEventListener('click', copyToClipboard);
+apiBtn.addEventListener('click', showApiDocumentation);
+themeToggle.addEventListener('click', toggleTheme);
+parallaxToggle.addEventListener('click', toggleParallax);
+closeModal.addEventListener('click', closeApiDocumentation);
+
+// 修复后的3D鼠标跟随效果
+document.addEventListener('mousemove', (e) => {
+    if (!parallaxEnabled) return;
+    
+    const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+    const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+    
+    container.style.transform = `perspective(1000px) rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+});
+
+// 鼠标离开窗口时才重置
+window.addEventListener('mouseleave', () => {
+    if (parallaxEnabled) {
+        container.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg)';
+    }
+});
+
+// 点击模态框外部关闭
+apiModal.addEventListener('click', (e) => {
+    if (e.target === apiModal) {
+        closeApiDocumentation();
+    }
+});
     </script>
 </body>
 </html>
