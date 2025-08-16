@@ -11,7 +11,6 @@
 ## 新功能
 
 - 修改参数查询，用法为：http://localhost:3000/api/hitokoto?level=min/max 其中min对应较轻的程度，而max则再进一步
-```
 - 速率限制与黑名单
 
 ## 部署
@@ -49,5 +48,6 @@ API地址: http://localhost:3000/api/hitokoto
 - 项目图一乐，真正想支持还请去看原版
 
 ## 许可证
+
 
 ### 本项目采用MIT作为开源许可证
